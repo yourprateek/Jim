@@ -1,5 +1,6 @@
 // ===== helpers =====
 const $app = document.getElementById('app'), $nav = document.getElementById('nav'), TZ = 'Asia/Kolkata';
+
 const tok = () => localStorage.getItem('token');
 const me = () => JSON.parse(localStorage.getItem('user') || 'null');
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -21,35 +22,45 @@ async function api(path, o = {}) {
   if (!r.ok) throw new Error(d.error?.message || 'Request failed');
   return d;
 }
+
 function logout() { localStorage.clear(); location.hash = '#/login'; render(); }
 let toastT;
+
 function toast(m, bad) {
   const t = document.getElementById('toast');
   t.textContent = (bad ? '⚠ Error: ' : '') + m; t.className = 'show' + (bad ? ' bad' : '');
   clearTimeout(toastT); toastT = setTimeout(() => (t.className = ''), 4000);
 }
+
 const errBox = (e, act) => `<p class="note err" role="alert">⚠ Error: ${esc(e)} ${act ? `<button class="btn ghost" data-act="${act}">Try again</button>` : ''}</p>`;
 
 // ===== forms: inline validation =====
 const need = (l) => (v) => (v ? '' : l + ' is required');
+
 const mail = (v) => (!v ? 'Email is required' : /^\S+@\S+\.\S+$/.test(v) ? '' : 'Please enter a valid email address');
+
 const RULES = {
   'l-email': mail, 'l-pass': need('Password'), 'r-name': need('Name'), 'r-email': mail,
   'r-pass': (v) => (v.length < 6 ? 'Password must be at least 6 characters' : ''),
   'c-date': need('Date'), 'k-code': need('Code'),
 };
+
 const field = (id, label, type = 'text', extra = '') =>
   `<div class="f"><label for="${id}">${label}</label><input id="${id}" type="${type}" ${extra} aria-describedby="${id}-e"><p class="fe" id="${id}-e"></p></div>`;
+
 function setErr(i, m) {
   document.getElementById(i.id + '-e').textContent = m ? '⚠ ' + m : '';
   i.setAttribute('aria-invalid', m ? 'true' : 'false');
 }
+
 const val = (i) => (i.type === 'password' ? i.value : i.value.trim());
+
 function validate(form) {
   let ok = true;
   form.querySelectorAll('input').forEach((i) => { const r = RULES[i.id]; if (r) { const m = r(val(i)); setErr(i, m); if (m) ok = false; } });
   return ok;
 }
+
 $app.addEventListener('focusout', (e) => { const r = RULES[e.target.id]; if (r) setErr(e.target, r(val(e.target))); });
 
 const FORMS = {
@@ -71,6 +82,7 @@ const FORMS = {
     document.getElementById('k-code').value = ''; return `✓ Code verified: ${r.name} marked present`;
   },
 };
+
 $app.onsubmit = async (e) => {
   e.preventDefault();
   const f = e.target, btn = f.querySelector('button'), msg = f.querySelector('.fmsg');
@@ -101,6 +113,7 @@ function pageAuth(reg) {
 // ===== page: sessions =====
 let timer, sessions = [], date = dayKey(Date.now()), loadState = 'loading', err = '', lastHtml = '';
 const busy = new Set();
+
 function pageSessions() {
   clearInterval(timer); sessions = []; lastHtml = '';
   const pills = [...Array(7).keys()].map((i) => {
@@ -115,6 +128,7 @@ function pageSessions() {
   loadSessions(true);
   timer = setInterval(() => loadSessions(), 5000); // seats refresh by polling
 }
+
 async function loadSessions(first) {
   if (busy.size && !first) return;
   if (first) { loadState = 'loading'; drawList(); }
@@ -132,6 +146,7 @@ function drawList() {
         : '<div class="grid">' + sessions.map(card).join('') + '</div>';
   if (h !== lastHtml) { el.innerHTML = h; lastHtml = h; }
 }
+
 function card(s) {
   const dis = busy.has(s.id) ? 'disabled' : '', started = new Date(s.startAt) <= new Date();
   const btn = (act, label, cls = '') => `<button class="btn ${cls}" data-act="${act}" data-id="${s.id}" ${dis}>${label}</button>`;
@@ -142,6 +157,7 @@ function card(s) {
           : `<p class="bad">Session full</p>${btn('join', 'Join waitlist', 'ghost')}`;
   return `<article class="card"><h2>${fmtRange(s.startAt)}</h2><p class="${s.seatsLeft > 0 ? 'ok' : 'muted'}">${s.seatsLeft} seats left</p>${act}</article>`;
 }
+
 async function doAct(act, id) {
   const s = sessions.find((x) => x.id === id); if (!s || busy.has(id)) return;
   const snap = { ...s }; busy.add(id);
@@ -165,6 +181,7 @@ async function pageBookings() {
   $app.innerHTML = '<h1>My bookings</h1><div id="bk" aria-live="polite"><p class="note">Loading…</p></div>';
   drawBookings();
 }
+
 async function drawBookings() {
   const el = document.getElementById('bk'); if (!el) return;
   try {
@@ -180,6 +197,7 @@ async function drawBookings() {
       <button class="btn ghost" data-act="leaveb" data-id="${w.sessionId}">Leave waitlist</button></article>`).join('') : '<p class="note">None.</p>');
   } catch (e) { el.innerHTML = errBox(e.message, 'retryb'); }
 }
+
 async function doBooking(b, act, id) {
   b.disabled = true;
   try {
@@ -207,6 +225,7 @@ function pageAdmin() {
     <p class="fmsg" role="status"></p><button class="btn" type="submit">Verify and check in</button></form></section></div>`;
   loadAdminSessions();
 }
+
 async function loadAdminSessions() {
   const ad = document.getElementById('ad'), as = document.getElementById('as'), ab = document.getElementById('ab'); if (!ad) return;
   ab.innerHTML = '<p class="note">Loading…</p>';
@@ -216,6 +235,7 @@ async function loadAdminSessions() {
     if (d.length) loadAdminBookings(d[0].id); else ab.innerHTML = '<p class="note">No sessions on this date.</p>';
   } catch (e) { ab.innerHTML = errBox(e.message); }
 }
+
 async function loadAdminBookings(id) {
   const ab = document.getElementById('ab'); if (!ab || !id) return;
   ab.innerHTML = '<p class="note">Loading…</p>';
@@ -236,6 +256,7 @@ $app.onclick = (e) => {
   else if (act === 'cancelb' || act === 'leaveb') doBooking(b, act, id);
   else doAct(act, id);
 };
+
 $app.onchange = (e) => {
   if (e.target.id === 'dp' && e.target.value) { date = e.target.value; pageSessions(); }
   if (e.target.id === 'ad') loadAdminSessions();
@@ -248,6 +269,7 @@ function drawNav(r) {
   $nav.innerHTML = u ? a('sessions', 'Sessions') + a('bookings', 'My Bookings') + (u.role === 'admin' ? a('admin', 'Admin') : '') + '<button id="out">Log out</button>' : '';
   if (u) document.getElementById('out').onclick = logout;
 }
+
 function render() {
   clearInterval(timer);
   const r = (location.hash.slice(2) || 'sessions'), authed = !!tok(), pub = r === 'login' || r === 'register';
@@ -258,5 +280,6 @@ function render() {
   ({ login: () => pageAuth(false), register: () => pageAuth(true), sessions: pageSessions, bookings: pageBookings, admin: pageAdmin }[r] || pageSessions)();
   $app.focus();
 }
+
 addEventListener('hashchange', render);
 render();
