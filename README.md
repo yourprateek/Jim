@@ -44,6 +44,7 @@ npm start                # open http://localhost:3000
 | Member    | riya@gym.test     | member123 |
 
 | Member    | aman@gym.test     | member123 |
+
 ---------------------------------------------
 
 Seed data: 8 sessions over the next 3 days. The second session is full (20 bookings from dummy members), so you can test the waitlist.
@@ -52,7 +53,6 @@ The admin account exists only in the database (seed script). Registration always
 
 ## API summary
 
--------------------------------------------------------------------------
 | Method        | Route                                     | Who       |
 -------------------------------------------------------------------------
 | POST          | `/api/auth/register`, `/api/auth/login`   | public    |
@@ -72,6 +72,7 @@ The admin account exists only in the database (seed script). Registration always
 | POST / DELETE | `/api/sessions/:id/waitlist`              | logged in |
 
 | POST          | `/api/checkin`                            | admin     |
+
 -------------------------------------------------------------------------
 
 Status codes: 400 invalid input, 401 not logged in, 403 not allowed, 404 not found, 409 conflict (full, already booked, code already used).
